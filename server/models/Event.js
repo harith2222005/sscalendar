@@ -17,11 +17,21 @@ const eventSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  startDate: {
+    type: Date,
+    required: true
+  },
+  endDate: {
+    type: Date,
+    required: true
+  },
   startTime: {
-    type: String
+    type: String,
+    required: true
   },
   endTime: {
-    type: String
+    type: String,
+    required: true
   },
   duration: {
     type: Number,
@@ -53,6 +63,18 @@ const eventSchema = new mongoose.Schema({
 
 // Index for efficient queries
 eventSchema.index({ userId: 1, date: 1 })
+eventSchema.index({ userId: 1, startDate: 1, endDate: 1 })
 eventSchema.index({ userId: 1, title: 'text', description: 'text' })
+
+// Pre-save middleware to ensure startDate and endDate are set
+eventSchema.pre('save', function(next) {
+  if (!this.startDate && this.date) {
+    this.startDate = this.date
+  }
+  if (!this.endDate && this.date) {
+    this.endDate = this.date
+  }
+  next()
+})
 
 export default mongoose.model('Event', eventSchema)

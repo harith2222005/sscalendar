@@ -32,7 +32,7 @@ const CalendarViewToggle = ({ currentView, onViewChange }) => {
   ]
 
   return (
-    <div className="flex items-center bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden">
+    <div className="flex items-center bg-white rounded-xl border-2 border-gray-200 shadow-md overflow-hidden">
       {views.map((view) => (
         <button
           key={view.id}

@@ -13,13 +13,30 @@ router.get('/', authenticateToken, async (req, res) => {
     let query = { userId: req.user._id, active: true }
     
     if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      }
+      query.$or = [
+        {
+          // Events that start within the range
+          startDate: {
+            $gte: new Date(startDate),
+            $lte: new Date(endDate)
+          }
+        },
+        {
+          // Events that end within the range
+          endDate: {
+            $gte: new Date(startDate),
+            $lte: new Date(endDate)
+          }
+        },
+        {
+          // Events that span the entire range
+          startDate: { $lte: new Date(startDate) },
+          endDate: { $gte: new Date(endDate) }
+        }
+      ]
     }
 
-    const events = await Event.find(query).sort({ date: 1, startTime: 1 })
+    const events = await Event.find(query).sort({ startDate: 1, startTime: 1 })
     
     res.json({
       events: events.map(event => ({
@@ -27,6 +44,8 @@ router.get('/', authenticateToken, async (req, res) => {
         title: event.title,
         description: event.description,
         date: event.date,
+        startDate: event.startDate,
+        endDate: event.endDate,
         startTime: event.startTime,
         endTime: event.endTime,
         duration: event.duration,
@@ -50,6 +69,14 @@ router.post('/', authenticateToken, async (req, res) => {
       userId: req.user._id
     }
 
+    // Ensure startDate and endDate are set
+    if (!eventData.startDate && eventData.date) {
+      eventData.startDate = eventData.date
+    }
+    if (!eventData.endDate && eventData.date) {
+      eventData.endDate = eventData.date
+    }
+
     const event = new Event(eventData)
     await event.save()
 
@@ -67,6 +94,8 @@ router.post('/', authenticateToken, async (req, res) => {
         title: event.title,
         description: event.description,
         date: event.date,
+        startDate: event.startDate,
+        endDate: event.endDate,
         startTime: event.startTime,
         endTime: event.endTime,
         duration: event.duration,
@@ -94,7 +123,16 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Event not found' })
     }
 
-    Object.assign(event, req.body)
+    // Ensure startDate and endDate are set
+    const updateData = { ...req.body }
+    if (!updateData.startDate && updateData.date) {
+      updateData.startDate = updateData.date
+    }
+    if (!updateData.endDate && updateData.date) {
+      updateData.endDate = updateData.date
+    }
+
+    Object.assign(event, updateData)
     await event.save()
 
     // Log the action
@@ -111,6 +149,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
         title: event.title,
         description: event.description,
         date: event.date,
+        startDate: event.startDate,
+        endDate: event.endDate,
         startTime: event.startTime,
         endTime: event.endTime,
         duration: event.duration,
@@ -167,16 +207,33 @@ router.post('/upload', authenticateToken, async (req, res) => {
     const createdEvents = []
     
     for (const eventData of events) {
-      const event = new Event({
+      // Ensure required fields are present
+      if (!eventData.title || !eventData.startTime || !eventData.endTime) {
+        continue // Skip invalid events
+      }
+
+      const processedEventData = {
         ...eventData,
         userId: req.user._id
-      })
+      }
+
+      // Ensure startDate and endDate are set
+      if (!processedEventData.startDate && processedEventData.date) {
+        processedEventData.startDate = processedEventData.date
+      }
+      if (!processedEventData.endDate && processedEventData.date) {
+        processedEventData.endDate = processedEventData.date
+      }
+
+      const event = new Event(processedEventData)
       await event.save()
       createdEvents.push({
         id: event._id,
         title: event.title,
         description: event.description,
         date: event.date,
+        startDate: event.startDate,
+        endDate: event.endDate,
         startTime: event.startTime,
         endTime: event.endTime,
         duration: event.duration,

@@ -6,6 +6,7 @@ import { CalendarProvider } from './contexts/CalendarContext'
 import LoginPage from './pages/LoginPage'
 import Dashboard from './pages/Dashboard'
 import ProtectedRoute from './components/ProtectedRoute'
+import NotificationPopup from './components/NotificationPopup'
 
 function App() {
   return (
@@ -26,6 +27,11 @@ function App() {
                 />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
               </Routes>
+              
+              {/* Global notification popup */}
+              <ProtectedRoute>
+                <NotificationPopup />
+              </ProtectedRoute>
             </div>
           </Router>
         </CalendarProvider>

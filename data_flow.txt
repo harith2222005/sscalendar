@@ -1,4 +1,4 @@
-# SSCalendar - Data Flow Documentation
+# SSCalendar - Enhanced Data Flow Documentation
 
 ## Authentication Flow
 
@@ -9,136 +9,223 @@
 5. Client sends token to POST /api/auth/google
 6. Server verifies token with Google
 7. Server finds/creates user in MongoDB
-8. Server logs login action
+8. Server logs login action with metadata
 9. Server returns JWT token + user data
 10. Client stores JWT in localStorage
 11. Client redirects to Dashboard
+12. Global NotificationPopup component initializes
 
-## Event Creation Flow
+## Enhanced Event Creation Flow
 
-1. User clicks "Create Event" button
-2. EventDialog opens with empty form
-3. User fills event details (title, date, time, etc.)
-4. User submits form
-5. Client validates form data
+1. User clicks "Create Event" button or plus (+) icon on calendar cell
+2. EventDialog opens with form (pre-filled date if from plus icon)
+3. User fills mandatory fields:
+   - Event title (required)
+   - Start date (required)
+   - End date (required)
+   - Start time (required)
+   - End time (required)
+   - Optional: description, group
+4. Client validates all required fields before submission
+5. Client validates date/time logic (end after start)
 6. Client sends POST /api/events with JWT header
 7. Server validates JWT and extracts user ID
-8. Server creates Event document in MongoDB
-9. Server logs event creation action
-10. Server returns created event data
-11. Client updates local events state
-12. Calendar grid re-renders with new event
-13. EventDialog closes
+8. Server validates all mandatory fields
+9. Server creates Event document with startDate/endDate fields
+10. Server logs event creation action with metadata
+11. Server returns created event data
+12. Client updates local events state
+13. All calendar views re-render with new event
+14. EventDialog closes
+15. NotificationPopup checks for new daily notifications
 
-## Event Display Flow
+## Multi-Day Event Display Flow
 
-1. User navigates to calendar month
-2. CalendarContext triggers fetchEvents()
-3. Client calculates date range (month ± 7 days)
+1. User navigates to calendar view
+2. CalendarContext triggers fetchEvents() with date range
+3. Client calculates extended date range (month ± 7 days)
 4. Client sends GET /api/events with date range
-5. Server queries events for user within date range
-6. Server returns filtered events array
+5. Server queries events using complex date logic:
+   - Events starting within range
+   - Events ending within range
+   - Events spanning entire range
+6. Server returns filtered events array with startDate/endDate
 7. Client updates events state
-8. CalendarGrid component re-renders
-9. getEventsForDate() filters events per day
-10. Event chips display on calendar cells
+8. CalendarGrid component processes events:
+   - Separates multi-day from single-day events
+   - Applies special styling for spanning events
+   - Sorts events by time priority
+9. Events display with appropriate visual indicators
 
-## Event Update Flow
+## Real-Time Clock Flow
 
-1. User clicks on existing event
-2. EventDialog opens with pre-filled data
-3. User modifies event details
-4. User submits form
-5. Client sends PUT /api/events/:id with changes
-6. Server validates ownership and updates document
-7. Server logs event update action
-8. Server returns updated event data
-9. Client updates local events state
-10. Calendar re-renders with changes
+1. RealTimeClock component mounts in Home header
+2. Component sets up 1-second interval timer
+3. Every second:
+   - Component updates time state
+   - Displays current time in HH:MM:SS format
+   - Applies smooth transition animations
+4. Component unmounts and cleans up timer
 
-## Search Flow
+## Event List Popup Flow
 
-1. User enters search query in Search component
-2. User applies optional filters (date, group)
-3. Client sends GET /api/search with parameters
-4. Server builds MongoDB query with filters
-5. Server executes text search on title/description
-6. Server returns matching events (max 100)
-7. Client displays results in list format
-8. User clicks result to navigate to Events tab
+1. User clicks on date number in calendar cell
+2. CalendarGrid calculates click position
+3. getEventsForDate() retrieves events for selected date
+4. EventListPopup renders at calculated position
+5. Events sorted by time priority:
+   - Currently happening (with pulse animation)
+   - Upcoming (sorted by start time)
+   - Past events (with reduced opacity)
+6. User can click events to edit or click outside to close
+7. Popup handles keyboard navigation (Escape key)
 
-## JSON Upload Flow
+## Multi-View Calendar Flow
 
-1. User clicks "Upload JSON" button
+1. User selects view from CalendarViewToggle (day/month/year)
+2. Home component updates calendarView state
+3. renderCalendarView() function switches between:
+   - DayView: Hourly timeline with positioned events
+   - MonthView: Traditional 7x6 grid (CalendarGrid)
+   - YearView: 12-month overview with event indicators
+4. Each view component receives appropriate props
+5. View-specific event positioning and styling applied
+6. Navigation controls adapt to current view
+
+## Enhanced Notification Flow
+
+1. NotificationPopup component monitors events state
+2. System filters events for current day
+3. System checks dismissed notifications cache
+4. For each undismissed event:
+   - Creates notification object
+   - Applies slide-in animation
+   - Shows event details and dismiss button
+5. User clicks X to dismiss notification
+6. Notification ID + date stored in dismissedNotifications set
+7. Notification removed from display
+8. For repeating events, notifications can reappear next day
+
+## Event Update Flow with Validation
+
+1. User clicks on existing event chip or from event list popup
+2. EventDialog opens with pre-filled data from event object
+3. Form populates startDate/endDate from event.startDate/endDate
+4. User modifies event details
+5. Client validates all mandatory fields
+6. Client validates date/time logic
+7. Client sends PUT /api/events/:id with changes
+8. Server validates ownership and all required fields
+9. Server updates document with new startDate/endDate
+10. Server logs event update action with metadata
+11. Server returns updated event data
+12. Client updates local events state
+13. All calendar views re-render with changes
+14. EventDialog closes
+
+## JSON Upload Flow with Enhanced Validation
+
+1. User clicks "Upload JSON" button in Events component
 2. Upload dialog opens with textarea
 3. User pastes JSON event data
 4. User clicks "Upload" button
 5. Client validates JSON format
 6. Client sends POST /api/events/upload
-7. Server validates each event object
+7. Server validates each event object:
+   - Checks for required fields (title, startTime, endTime)
+   - Skips invalid events
+   - Sets startDate/endDate if missing
 8. Server creates multiple Event documents
-9. Server logs JSON upload action
+9. Server logs JSON upload action with count metadata
 10. Server returns created events array
 11. Client merges new events with existing state
-12. Calendar updates to show new events
+12. All calendar views update to show new events
+
+## Day View Timeline Flow
+
+1. User selects "Day" from view toggle
+2. DayView component renders hourly timeline
+3. Component generates 24 time slots (00:00 to 23:00)
+4. For each event:
+   - Calculates position based on start time
+   - Calculates height based on duration
+   - Applies color coding and styling
+5. Current time indicator shows red line at current hour/minute
+6. Events positioned absolutely within timeline
+7. User can click time slots to create new events
+8. User can click events to edit
+
+## Year View Overview Flow
+
+1. User selects "Year" from view toggle
+2. YearView component generates 12 month grids
+3. For each month:
+   - Generates mini calendar grid
+   - Counts events for each day
+   - Applies visual indicators for days with events
+4. User can click dates to navigate to specific day
+5. Month statistics show total events per month
+
+## Enhanced Search Flow
+
+1. User enters search query in Search component
+2. User applies optional filters (date range, group)
+3. Client sends GET /api/search with parameters
+4. Server builds complex MongoDB query:
+   - Text search on title/description
+   - Date range filtering
+   - Group filtering
+5. Server executes search with 100 result limit
+6. Server returns matching events with full details
+7. Client displays results with status indicators
+8. User clicks result to navigate to Events tab with selected event
 
 ## User Management Flow (Admin)
 
 1. Admin navigates to Users tab
 2. Client sends GET /api/users
 3. Server checks admin role permission
-4. Server returns all users from database
+4. Server returns all users with statistics
 5. Admin clicks activate/deactivate button
 6. Client sends PATCH /api/users/:id
 7. Server updates user active status
-8. Server deactivates user's events if needed
-9. Server logs admin action
+8. If deactivating, server also deactivates user's events
+9. Server logs admin action with target user metadata
 10. Client updates user list display
 
-## Notification Generation Flow
+## Enhanced Logging Flow
 
-1. NotificationContext monitors events state
-2. System filters events for next 7 days
-3. System identifies high-priority (next day) events
-4. System checks for repeating events
-5. System generates notification objects
-6. System sorts by priority and date
-7. Notifications component displays list
-8. User can toggle repeat settings
-9. Changes trigger event update flow
-
-## Logging Flow
-
-1. Any significant action occurs (login, CRUD, admin)
+1. Any significant action occurs (login, CRUD, admin, logout)
 2. Server creates Log document with:
    - User ID reference
-   - Action type enum
-   - Description string
-   - Metadata object
-   - Timestamp
+   - Action type enum (expanded list)
+   - Detailed description
+   - Rich metadata object (event IDs, user emails, etc.)
+   - Precise timestamp
 3. Log saved to MongoDB logs collection
-4. Admin can view logs via GET /api/logs
-5. Logs filtered by action, user, date range
-6. Results displayed in chronological order
+4. Admin can view logs via GET /api/logs with filtering
+5. Logs displayed with user information and action context
+6. Results paginated and sorted chronologically
 
 ## Error Handling Flow
 
 1. Error occurs in client or server
-2. Server errors logged to console
-3. Server returns appropriate HTTP status
+2. Server errors logged to console with stack traces
+3. Server returns appropriate HTTP status with descriptive message
 4. Client catches error in try/catch blocks
-5. Client displays user-friendly error message
-6. Client maintains application state
-7. User can retry failed operations
+5. Client displays user-friendly error message with context
+6. Client maintains application state and allows retry
+7. User can retry failed operations without data loss
 
 ## State Management Flow
 
-1. AuthContext manages user authentication state
+1. AuthContext manages user authentication state globally
 2. CalendarContext manages events and calendar state
-3. Components subscribe to context changes
-4. State updates trigger re-renders
-5. Local storage persists JWT token
-6. Page refresh restores authentication state
+3. Components subscribe to context changes via useContext
+4. State updates trigger re-renders across all subscribed components
+5. Local storage persists JWT token across sessions
+6. Page refresh restores authentication state automatically
+7. Real-time updates propagate to all calendar views
 
 ## Database Schema Relationships
 
@@ -147,26 +234,49 @@ Users Collection:
 - googleId (String) - Google OAuth ID
 - email (String) - Unique identifier
 - role (String) - user|admin permissions
+- active (Boolean) - Account status
+- lastLogin (Date) - Session tracking
 
 Events Collection:
 - _id (ObjectId) - Primary key
 - userId (ObjectId) - References Users._id
-- date (Date) - Event date for queries
+- date (Date) - Legacy field for backward compatibility
+- startDate (Date) - Event start date (required)
+- endDate (Date) - Event end date (required)
+- startTime (String) - Event start time (required)
+- endTime (String) - Event end time (required)
 - repeat (Object) - Repeat configuration
 
 Logs Collection:
 - _id (ObjectId) - Primary key
 - userId (ObjectId) - References Users._id
 - action (String) - Enum of action types
+- description (String) - Human-readable description
+- metadata (Object) - Rich contextual data
 - timestamp (Date) - For chronological sorting
 
 ## Security Flow
 
 1. All API routes protected by authenticateToken middleware
 2. JWT token validated on each request
-3. User object attached to request
+3. User object attached to request for authorization
 4. Admin routes have additional requireAdmin check
 5. Database queries filtered by user ownership
-6. Rate limiting prevents abuse
-7. CORS configured for client domain only
-8. Helmet adds security headers
+6. Rate limiting prevents abuse (100 requests/15 minutes)
+7. CORS configured for specific client domains only
+8. Helmet adds comprehensive security headers
+9. Input validation prevents injection attacks
+10. Sensitive operations logged for audit trail
+
+## Performance Optimization Flow
+
+1. Frontend uses Vite for fast builds and hot reload
+2. Components lazy-loaded to reduce initial bundle size
+3. Database queries use indexes for fast retrieval
+4. Event queries optimized for date ranges
+5. Search results limited to prevent performance issues
+6. Real-time updates debounced to prevent excessive re-renders
+7. Images and assets served from CDN
+8. Compression middleware reduces payload sizes
+9. Connection pooling optimizes database connections
+10. Caching strategies implemented at multiple levels

@@ -6,7 +6,8 @@ const EventDialog = ({ isOpen, onClose, selectedDate, event = null }) => {
   const { createEvent, updateEvent, deleteEvent } = useCalendar()
   const [formData, setFormData] = useState({
     title: '',
-    date: selectedDate ? selectedDate.format('YYYY-MM-DD') : '',
+    startDate: selectedDate ? selectedDate.format('YYYY-MM-DD') : '',
+    endDate: selectedDate ? selectedDate.format('YYYY-MM-DD') : '',
     startTime: '',
     endTime: '',
     description: '',
@@ -22,9 +23,13 @@ const EventDialog = ({ isOpen, onClose, selectedDate, event = null }) => {
 
   useEffect(() => {
     if (event) {
+      const eventStartDate = dayjs(event.startDate || event.date)
+      const eventEndDate = dayjs(event.endDate || event.date)
+      
       setFormData({
         title: event.title || '',
-        date: dayjs(event.date).format('YYYY-MM-DD'),
+        startDate: eventStartDate.format('YYYY-MM-DD'),
+        endDate: eventEndDate.format('YYYY-MM-DD'),
         startTime: event.startTime || '',
         endTime: event.endTime || '',
         description: event.description || '',
@@ -34,7 +39,8 @@ const EventDialog = ({ isOpen, onClose, selectedDate, event = null }) => {
     } else if (selectedDate) {
       setFormData(prev => ({
         ...prev,
-        date: selectedDate.format('YYYY-MM-DD')
+        startDate: selectedDate.format('YYYY-MM-DD'),
+        endDate: selectedDate.format('YYYY-MM-DD')
       }))
     }
   }, [event, selectedDate])
@@ -65,14 +71,69 @@ const EventDialog = ({ isOpen, onClose, selectedDate, event = null }) => {
     handleRepeatChange('weekdays', weekdays)
   }
 
+  const validateForm = () => {
+    if (!formData.title.trim()) {
+      setError('Event title is required')
+      return false
+    }
+    
+    if (!formData.startDate) {
+      setError('Start date is required')
+      return false
+    }
+    
+    if (!formData.endDate) {
+      setError('End date is required')
+      return false
+    }
+    
+    if (!formData.startTime) {
+      setError('Start time is required')
+      return false
+    }
+    
+    if (!formData.endTime) {
+      setError('End time is required')
+      return false
+    }
+    
+    // Validate date range
+    const startDate = dayjs(formData.startDate)
+    const endDate = dayjs(formData.endDate)
+    
+    if (endDate.isBefore(startDate)) {
+      setError('End date cannot be before start date')
+      return false
+    }
+    
+    // Validate time range for same day events
+    if (startDate.isSame(endDate, 'day')) {
+      const startTime = dayjs(`2000-01-01 ${formData.startTime}`)
+      const endTime = dayjs(`2000-01-01 ${formData.endTime}`)
+      
+      if (endTime.isBefore(startTime) || endTime.isSame(startTime)) {
+        setError('End time must be after start time')
+        return false
+      }
+    }
+    
+    return true
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
     setError('')
+    
+    if (!validateForm()) {
+      return
+    }
+    
+    setLoading(true)
 
     try {
       const eventData = {
         ...formData,
+        date: formData.startDate, // Keep for backward compatibility
         duration: formData.startTime && formData.endTime 
           ? dayjs(`2000-01-01 ${formData.endTime}`).diff(dayjs(`2000-01-01 ${formData.startTime}`), 'minute')
           : 0
@@ -129,7 +190,7 @@ const EventDialog = ({ isOpen, onClose, selectedDate, event = null }) => {
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" onClick={onClose} />
 
-        <div className="inline-block w-full max-w-2xl p-8 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-3xl border border-gray-100">
+        <div className="inline-block w-full max-w-3xl p-8 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-3xl border border-gray-100">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center">
@@ -165,7 +226,9 @@ const EventDialog = ({ isOpen, onClose, selectedDate, event = null }) => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Event Title */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Event Name</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Event Name <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 name="title"
@@ -177,54 +240,77 @@ const EventDialog = ({ isOpen, onClose, selectedDate, event = null }) => {
               />
             </div>
 
-            {/* Date and Group */}
+            {/* Date Range */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Date</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="date"
-                  name="date"
-                  value={formData.date}
+                  name="startDate"
+                  value={formData.startDate}
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Group Name</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  End Date <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="text"
-                  name="group"
-                  value={formData.group}
+                  type="date"
+                  name="endDate"
+                  value={formData.endDate}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Optional group name"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  required
                 />
               </div>
             </div>
 
-            {/* Start and End Time */}
+            {/* Time Range */}
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Start Date & Time</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Start Time <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="time"
                   name="startTime"
                   value={formData.startTime}
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                  required
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">End Date & Time</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  End Time <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="time"
                   name="endTime"
                   value={formData.endTime}
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+                  required
                 />
               </div>
+            </div>
+
+            {/* Group Name */}
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Group Name</label>
+              <input
+                type="text"
+                name="group"
+                value={formData.group}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                placeholder="Optional group name"
+              />
             </div>
 
             {/* Description */}

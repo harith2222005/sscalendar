@@ -66,6 +66,7 @@ GOOGLE_CLIENT_SECRET=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
 JWT_SECRET=your_super_secret_jwt_key_here_make_it_long_and_random
 CLIENT_URL=http://localhost:5173
 PORT=3000
+NODE_ENV=development
 ```
 
 ## Development Commands
@@ -76,8 +77,8 @@ PORT=3000
 npm run dev
 
 # This starts:
-# - Client on http://localhost:5173
-# - Server on http://localhost:3000
+# - Client on http://localhost:5173 with enhanced features
+# - Server on http://localhost:3000 with multi-day event support
 ```
 
 ### Run Individual Services
@@ -87,6 +88,7 @@ npm run dev
 cd client
 npm run dev
 # Runs on http://localhost:5173
+# Features: Real-time clock, multi-view calendar, enhanced notifications
 ```
 
 #### Server Only
@@ -94,6 +96,7 @@ npm run dev
 cd server
 npm run dev
 # Runs on http://localhost:3000
+# Features: Enhanced event API, multi-day support, improved validation
 ```
 
 ## Build Commands
@@ -103,13 +106,14 @@ npm run dev
 cd client
 npm run build
 # Creates /client/dist folder with optimized files
+# Includes all new features: day/year views, real-time clock, notifications
 ```
 
 ### Preview Production Build
 ```bash
 cd client
 npm run preview
-# Serves production build locally
+# Serves production build locally for testing
 ```
 
 ## Testing Commands
@@ -118,18 +122,33 @@ npm run preview
 ```bash
 cd client
 npm run lint
-# Checks for code quality issues
+# Checks for code quality issues in enhanced components
 ```
 
-### Test API Endpoints
+### Test Enhanced API Endpoints
 ```bash
-# Use curl or Postman to test endpoints
+# Use curl or Postman to test new endpoints
 
 # Health check
 curl http://localhost:3000/api/health
 
-# Test with authentication (replace TOKEN with actual JWT)
-curl -H "Authorization: Bearer TOKEN" http://localhost:3000/api/events
+# Test multi-day event creation (replace TOKEN with actual JWT)
+curl -X POST http://localhost:3000/api/events \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Multi-day Conference",
+    "startDate": "2024-01-15",
+    "endDate": "2024-01-17",
+    "startTime": "09:00",
+    "endTime": "17:00",
+    "description": "Annual tech conference",
+    "group": "Work"
+  }'
+
+# Test enhanced search with filters
+curl -H "Authorization: Bearer TOKEN" \
+  "http://localhost:3000/api/search?query=meeting&startDate=2024-01-01&endDate=2024-01-31"
 ```
 
 ## Database Commands
@@ -139,23 +158,58 @@ curl -H "Authorization: Bearer TOKEN" http://localhost:3000/api/events
 2. Whitelist your IP address in Atlas
 3. Verify connection string in server/.env
 4. Database and collections will be created automatically
+5. New indexes will be created for enhanced queries
 
-### Check Database Connection
+### Check Enhanced Database Connection
 ```bash
 cd server
 node -e "
 const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://harithcb22:H4rithP3rum4l@cluster0.ga2tc.mongodb.net/GuardShare?retryWrites=true&w=majority&appName=Cluster0')
-.then(() => console.log('MongoDB connected successfully'))
+.then(() => {
+  console.log('MongoDB connected successfully');
+  console.log('Enhanced event schema with startDate/endDate support');
+})
 .catch(err => console.error('MongoDB connection error:', err));
 "
+```
+
+## Feature Testing Commands
+
+### Test Real-Time Clock
+```bash
+# Open browser to http://localhost:5173
+# Verify clock updates every second in header
+# Check 24-hour format (HH:MM:SS)
+```
+
+### Test Multi-Day Events
+```bash
+# Create event spanning multiple days
+# Verify visual spanning across calendar cells
+# Check event appears in all affected days
+```
+
+### Test Calendar Views
+```bash
+# Test Day View: Click "Day" button, verify hourly timeline
+# Test Month View: Default view with enhanced grid
+# Test Year View: Click "Year" button, verify 12-month overview
+```
+
+### Test Enhanced Notifications
+```bash
+# Create event for today
+# Verify notification popup appears
+# Test dismiss functionality (click X)
+# Verify notification doesn't reappear after dismissal
 ```
 
 ## Deployment Commands
 
 ### Deploy to Netlify (Frontend)
 ```bash
-# Build the client
+# Build the enhanced client
 cd client
 npm run build
 
@@ -210,15 +264,12 @@ lsof -i :5173  # Client port
 kill -9 <PID>
 ```
 
-### View Logs
+### Debug Enhanced Features
 ```bash
-# Server logs (if running separately)
-cd server
-npm run dev
-
-# Client logs (if running separately)
-cd client
-npm run dev
+# Check browser console for errors
+# Verify network requests in DevTools
+# Check MongoDB logs for query issues
+# Verify Google OAuth configuration
 ```
 
 ## Production Environment Variables
@@ -240,7 +291,7 @@ PORT=3000
 NODE_ENV=production
 ```
 
-## Quick Start Summary
+## Enhanced Quick Start Summary
 ```bash
 # 1. Install dependencies
 npm install && cd client && npm install && cd ../server && npm install && cd ..
@@ -249,36 +300,97 @@ npm install && cd client && npm install && cd ../server && npm install && cd ..
 cp client/.env.example client/.env
 cp server/.env.example server/.env
 
-# 3. Run application
+# 3. Run enhanced application
 npm run dev
 
 # 4. Open browser to http://localhost:5173
+# 5. Test new features:
+#    - Real-time clock in header
+#    - Plus icons on calendar cells
+#    - Day/Month/Year view toggle
+#    - Event list popups (click date numbers)
+#    - Multi-day event creation
+#    - Enhanced notifications
 ```
+
+## New Feature Verification
+
+### Real-Time Features
+- [ ] Clock updates every second
+- [ ] Notifications appear for today's events
+- [ ] Current time indicator in day view
+- [ ] Live event status updates
+
+### Enhanced Calendar
+- [ ] Plus icons appear on hover
+- [ ] Date clicks show event popups
+- [ ] Multi-day events span correctly
+- [ ] Event sorting by time priority
+- [ ] Thicker, darker grid borders
+
+### Multi-View System
+- [ ] Day view shows hourly timeline
+- [ ] Year view displays 12 months
+- [ ] Smooth transitions between views
+- [ ] Proper event positioning in each view
+
+### Form Validation
+- [ ] All fields marked as required
+- [ ] Validation errors display clearly
+- [ ] Date/time logic validation
+- [ ] Successful submission feedback
 
 ## Common Issues and Solutions
 
-### Port Already in Use
+### Enhanced Feature Issues
 ```bash
-# Change ports in package.json scripts or kill existing processes
-pkill -f "node.*3000"
-pkill -f "vite.*5173"
+# Real-time clock not updating
+# Check component mounting and interval cleanup
+
+# Multi-day events not displaying
+# Verify startDate/endDate in database
+# Check event query logic
+
+# Notifications not appearing
+# Verify today's events exist
+# Check dismissal state management
+
+# Plus icons not showing
+# Verify hover states and CSS
+# Check event handlers
 ```
 
-### MongoDB Connection Issues
-- Check Atlas cluster status
-- Verify IP whitelist
-- Confirm connection string format
-- Check network connectivity
-
-### Google OAuth Issues
-- Verify client ID in both environments
-- Check authorized origins in Google Console
-- Ensure redirect URIs are configured
-- Confirm client secret (server only)
-
-### Build Issues
+### Database Migration Issues
 ```bash
-# Clear cache and rebuild
-rm -rf client/dist client/node_modules/.vite
-cd client && npm run build
+# Existing events missing startDate/endDate
+# Run migration script to populate fields
+# Check pre-save middleware in Event model
 ```
+
+### Performance Issues
+```bash
+# Slow calendar rendering
+# Check event query optimization
+# Verify database indexes
+# Monitor component re-renders
+```
+
+## Development Best Practices
+
+### Code Quality
+- Use ESLint for code consistency
+- Follow React hooks best practices
+- Implement proper error boundaries
+- Write descriptive commit messages
+
+### Testing Strategy
+- Test all new features manually
+- Verify responsive design
+- Check accessibility compliance
+- Test with different data sets
+
+### Performance Monitoring
+- Monitor bundle size growth
+- Check database query performance
+- Verify memory usage patterns
+- Test with large event datasets

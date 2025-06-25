@@ -21,12 +21,12 @@ Frontend React application built with Vite
 
 ### Source Code (/client/src)
 - main.jsx: React application entry point
-- App.jsx: Root component with routing and context providers
-- index.css: Global styles with Tailwind directives and custom CSS classes
+- App.jsx: Root component with routing, context providers, and global notification system
+- index.css: Global styles with Tailwind directives, custom CSS classes, and enhanced calendar styling
 
 ### Contexts (/client/src/contexts)
 - AuthContext.jsx: Authentication state management (login, logout, user data)
-- CalendarContext.jsx: Calendar and events state management (CRUD operations)
+- CalendarContext.jsx: Calendar and events state management (CRUD operations, multi-day events)
 
 ### Components (/client/src/components)
 - ProtectedRoute.jsx: Route guard for authenticated users
@@ -34,10 +34,21 @@ Frontend React application built with Vite
 - Sidebar.jsx: Navigation sidebar with responsive mobile/desktop versions
 
 #### Calendar Components
-- Home.jsx: Main calendar view with month navigation
-- CalendarGrid.jsx: 7x6 calendar grid displaying events
-- EventDialog.jsx: Modal for creating/editing events
+- Home.jsx: Main calendar view with multi-view support (day/month/year) and real-time clock
+- CalendarGrid.jsx: Enhanced 7x6 calendar grid with plus icons, event sorting, and multi-day event support
+- EventDialog.jsx: Modal for creating/editing events with mandatory field validation
 - Events.jsx: Event list view with JSON upload functionality
+- CalendarViewToggle.jsx: Enhanced view switcher for day/month/year views
+
+#### New Calendar View Components
+- DayView.jsx: Hourly timeline view with time-based event positioning
+- YearView.jsx: 12-month overview with event indicators and statistics
+- RealTimeClock.jsx: Live 24-hour format clock with second precision
+
+#### Interactive Components
+- EventListPopup.jsx: Popup showing all events for a selected date with status indicators
+- NotificationPopup.jsx: Daily event notifications with dismiss functionality
+- ActiveEventDialog.jsx: Real-time notifications for current and upcoming events
 
 #### Feature Components
 - Search.jsx: Event search with filters (date, group, text)
@@ -62,7 +73,7 @@ Backend Express.js API server
 
 ### Database Models (/server/models)
 - User.js: User schema (Google OAuth data, role, status)
-- Event.js: Event schema (calendar events with repeat logic)
+- Event.js: Enhanced event schema with startDate/endDate fields for multi-day events
 - Log.js: Activity log schema (user actions tracking)
 
 ### Middleware (/server/middleware)
@@ -70,7 +81,7 @@ Backend Express.js API server
 
 ### API Routes (/server/routes)
 - auth.js: Authentication endpoints (Google OAuth, user profile)
-- events.js: Event CRUD operations and JSON upload
+- events.js: Enhanced event CRUD operations with multi-day support and JSON upload
 - users.js: User management endpoints (admin only)
 - logs.js: Activity logs endpoints (admin only)
 - search.js: Event search functionality
@@ -82,6 +93,7 @@ Backend Express.js API server
 - file_explanations.txt: This file - explains purpose of each file/folder
 - run_commands.txt: Setup and execution commands
 - google.txt: Google Cloud Console configuration requirements
+- product_description.txt: Comprehensive product overview and feature documentation
 
 ## Key Architecture Decisions
 
@@ -91,6 +103,15 @@ Backend Express.js API server
 - React Router for client-side routing
 - Tailwind CSS for styling with custom design system
 - Vite for fast development and building
+- Multi-view calendar system (day/month/year)
+
+### Enhanced Calendar Features
+- Real-time clock display with 24-hour format
+- Multi-day event support with visual spanning
+- Event sorting by time priority (current → upcoming → past)
+- Interactive plus icons for quick event creation
+- Event list popups with detailed information
+- Enhanced visual design with thicker borders and better contrast
 
 ### Backend Architecture
 - Express.js RESTful API
@@ -98,12 +119,14 @@ Backend Express.js API server
 - JWT for stateless authentication
 - Google OAuth 2.0 for user authentication
 - Middleware-based security (helmet, rate limiting, CORS)
+- Enhanced event model with multi-day support
 
 ### Database Design
 - User-centric data model (events belong to users)
-- Flexible event schema supporting repeat patterns
+- Flexible event schema supporting multi-day events and repeat patterns
 - Activity logging for admin oversight
 - Indexed queries for performance
+- Backward compatibility with existing single-day events
 
 ### Security Implementation
 - JWT tokens for API authentication
@@ -112,6 +135,14 @@ Backend Express.js API server
 - Request rate limiting
 - CORS protection
 - Input validation and sanitization
+
+### User Experience Enhancements
+- Mandatory field validation with visual indicators
+- Real-time notifications with dismiss functionality
+- Intuitive calendar navigation with multiple view options
+- Professional visual design with enhanced borders and spacing
+- Responsive design for all device sizes
+- Accessibility features and keyboard navigation
 
 ### Development Workflow
 - Concurrent development (client and server)

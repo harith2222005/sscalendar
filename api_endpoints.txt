@@ -33,10 +33,15 @@ Description: Get current authenticated user
 Headers: Authorization: Bearer jwt_token
 Response: Same as login response user object
 
+### POST /auth/logout
+Description: Log out current user and record logout action
+Headers: Authorization: Bearer jwt_token
+Response: { "message": "Logged out successfully" }
+
 ## Event Endpoints
 
 ### GET /events
-Description: Get user's events with optional date filtering
+Description: Get user's events with optional date filtering (supports multi-day events)
 Headers: Authorization: Bearer jwt_token
 Query Parameters:
 - startDate: ISO date string (optional)
@@ -52,6 +57,8 @@ Response:
       "title": "Meeting",
       "description": "Team meeting",
       "date": "2024-01-15T00:00:00.000Z",
+      "startDate": "2024-01-15T00:00:00.000Z",
+      "endDate": "2024-01-17T00:00:00.000Z",
       "startTime": "10:00",
       "endTime": "11:00",
       "duration": 60,
@@ -68,13 +75,14 @@ Response:
 }
 
 ### POST /events
-Description: Create a new event
+Description: Create a new event (all time fields are mandatory)
 Headers: Authorization: Bearer jwt_token, Content-Type: application/json
 Body:
 {
   "title": "New Event",
   "description": "Event description",
-  "date": "2024-01-15",
+  "startDate": "2024-01-15",
+  "endDate": "2024-01-15",
   "startTime": "10:00",
   "endTime": "11:00",
   "duration": 60,
@@ -86,10 +94,12 @@ Body:
   }
 }
 
+Note: startDate, endDate, startTime, and endTime are all required fields.
+
 ### PUT /events/:id
 Description: Update an existing event
 Headers: Authorization: Bearer jwt_token, Content-Type: application/json
-Body: Same as POST /events
+Body: Same as POST /events (all fields required)
 
 ### DELETE /events/:id
 Description: Delete an event
@@ -97,23 +107,29 @@ Headers: Authorization: Bearer jwt_token
 Response: { "message": "Event deleted successfully" }
 
 ### POST /events/upload
-Description: Upload multiple events via JSON
+Description: Upload multiple events via JSON (with enhanced validation)
 Headers: Authorization: Bearer jwt_token, Content-Type: application/json
 Body:
 {
   "events": [
     {
       "title": "Event 1",
-      "date": "2024-01-15",
-      "startTime": "10:00"
+      "startDate": "2024-01-15",
+      "endDate": "2024-01-15",
+      "startTime": "10:00",
+      "endTime": "11:00"
     },
     {
       "title": "Event 2",
-      "date": "2024-01-16",
-      "startTime": "14:00"
+      "startDate": "2024-01-16",
+      "endDate": "2024-01-18",
+      "startTime": "14:00",
+      "endTime": "15:00"
     }
   ]
 }
+
+Note: Events missing required fields (title, startTime, endTime) will be skipped during upload.
 
 ## Search Endpoints
 
@@ -127,6 +143,31 @@ Query Parameters:
 - group: Group name filter (optional)
 
 Sample Request: GET /search?query=meeting&group=work
+
+Response:
+{
+  "results": [
+    {
+      "id": "event_id",
+      "title": "Meeting",
+      "description": "Team meeting",
+      "date": "2024-01-15T00:00:00.000Z",
+      "startDate": "2024-01-15T00:00:00.000Z",
+      "endDate": "2024-01-15T00:00:00.000Z",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "duration": 60,
+      "group": "Work",
+      "repeat": {
+        "type": "weekly",
+        "weekdays": [1, 3, 5],
+        "dates": []
+      },
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
 
 ## User Management Endpoints (Admin Only)
 
@@ -166,15 +207,61 @@ Query Parameters:
 - endDate: ISO date string (optional)
 - limit: Number of results (default: 50)
 
+Response:
+{
+  "logs": [
+    {
+      "id": "log_id",
+      "userId": "user_id",
+      "userName": "User Name",
+      "userEmail": "user@example.com",
+      "action": "event_created",
+      "description": "Created event: Meeting",
+      "metadata": {
+        "eventId": "event_id",
+        "title": "Meeting"
+      },
+      "timestamp": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
+
 ## Health Check
 
 ### GET /health
 Description: Check server status
 Response: { "status": "OK", "timestamp": "2024-01-01T00:00:00.000Z" }
 
+## Enhanced Features
+
+### Multi-Day Event Support
+- Events can now span multiple days using startDate and endDate fields
+- API automatically handles date range queries for multi-day events
+- Backward compatibility maintained with existing single-day events
+
+### Mandatory Field Validation
+- All event creation and update operations require:
+  - title (event name)
+  - startDate (event start date)
+  - endDate (event end date)
+  - startTime (event start time)
+  - endTime (event end time)
+- Server validates all required fields before processing
+
+### Enhanced Logging
+- All user actions are logged with detailed metadata
+- Logs include user information and action context
+- Admin users can filter and search through activity logs
+
+### Improved Search
+- Text search across event titles and descriptions
+- Date range filtering for finding events in specific periods
+- Group-based filtering for categorized events
+- Results limited to 100 for performance
+
 ## Error Responses
 All endpoints may return these error responses:
-- 400: Bad Request - Invalid input data
+- 400: Bad Request - Invalid input data or missing required fields
 - 401: Unauthorized - Missing or invalid token
 - 403: Forbidden - Insufficient permissions
 - 404: Not Found - Resource not found
@@ -184,3 +271,21 @@ Error Response Format:
 {
   "message": "Error description"
 }
+
+## Rate Limiting
+- All endpoints are rate limited to 100 requests per 15-minute window per IP
+- Rate limit headers included in responses
+- 429 status code returned when limit exceeded
+
+## Security Headers
+- All responses include security headers via Helmet middleware
+- CORS configured for specified client origins only
+- JWT tokens expire after 7 days
+- All sensitive operations require valid authentication
+
+## Data Validation
+- Input validation on all POST/PUT endpoints
+- Date format validation (ISO 8601)
+- Time format validation (HH:MM)
+- Text field length limits enforced
+- SQL injection protection via Mongoose ODM
