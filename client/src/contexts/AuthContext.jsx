@@ -25,6 +25,30 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token])
 
+  // Auto-logout on tab close
+  useEffect(() => {
+    const handleBeforeUnload = async (event) => {
+      if (user && token) {
+        // Send logout request to server
+        try {
+          await axios.post('/api/auth/logout')
+        } catch (error) {
+          console.error('Logout on tab close failed:', error)
+        }
+        
+        // Clear local storage
+        localStorage.removeItem('token')
+        delete axios.defaults.headers.common['Authorization']
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [user, token])
+
   const fetchUser = async () => {
     try {
       const response = await axios.get('/api/auth/me')
@@ -57,7 +81,14 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // Send logout request to server
+      await axios.post('/api/auth/logout')
+    } catch (error) {
+      console.error('Server logout failed:', error)
+    }
+    
     localStorage.removeItem('token')
     setToken(null)
     setUser(null)

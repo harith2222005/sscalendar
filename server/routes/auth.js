@@ -90,4 +90,22 @@ router.get('/me', authenticateToken, async (req, res) => {
   })
 })
 
+// Logout endpoint
+router.post('/logout', authenticateToken, async (req, res) => {
+  try {
+    // Log the logout action
+    await Log.create({
+      userId: req.user._id,
+      action: 'user_logout',
+      description: `User ${req.user.name} logged out`,
+      metadata: { email: req.user.email }
+    })
+
+    res.json({ message: 'Logged out successfully' })
+  } catch (error) {
+    console.error('Logout error:', error)
+    res.status(500).json({ message: 'Logout failed' })
+  }
+})
+
 export default router

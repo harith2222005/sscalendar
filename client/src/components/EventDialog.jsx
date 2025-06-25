@@ -57,6 +57,14 @@ const EventDialog = ({ isOpen, onClose, selectedDate, event = null }) => {
     }))
   }
 
+  const handleWeekdayToggle = (day) => {
+    const weekdays = formData.repeat.weekdays.includes(day)
+      ? formData.repeat.weekdays.filter(d => d !== day)
+      : [...formData.repeat.weekdays, day]
+    
+    handleRepeatChange('weekdays', weekdays)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -106,19 +114,36 @@ const EventDialog = ({ isOpen, onClose, selectedDate, event = null }) => {
 
   if (!isOpen) return null
 
+  const weekdays = [
+    { id: 0, label: 'Sun', name: 'Sunday' },
+    { id: 1, label: 'Mon', name: 'Monday' },
+    { id: 2, label: 'Tue', name: 'Tuesday' },
+    { id: 3, label: 'Wed', name: 'Wednesday' },
+    { id: 4, label: 'Thu', name: 'Thursday' },
+    { id: 5, label: 'Fri', name: 'Friday' },
+    { id: 6, label: 'Sat', name: 'Saturday' }
+  ]
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose} />
+        <div className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" onClick={onClose} />
 
-        <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {event ? 'Edit Event' : 'Create Event'}
-            </h3>
+        <div className="inline-block w-full max-w-2xl p-8 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-3xl border border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center">
+                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v10m6-10v10m-6 0h6" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                {event ? 'Edit Event' : 'Create New Event'}
+              </h3>
+            </div>
             <button
               onClick={onClose}
-              className="p-1 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-200"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -127,91 +152,101 @@ const EventDialog = ({ isOpen, onClose, selectedDate, event = null }) => {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
+            <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl">
+              <div className="flex items-center space-x-2">
+                <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="text-red-700 font-medium">{error}</span>
+              </div>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Event Title */}
             <div>
-              <label className="form-label">Event Title</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Event Name</label>
               <input
                 type="text"
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
-                className="form-input"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg font-medium"
                 placeholder="Enter event title"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Date and Group */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="form-label">Date</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Date</label>
                 <input
                   type="date"
                   name="date"
                   value={formData.date}
                   onChange={handleInputChange}
-                  className="form-input"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   required
                 />
               </div>
               <div>
-                <label className="form-label">Group</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Group Name</label>
                 <input
                   type="text"
                   name="group"
                   value={formData.group}
                   onChange={handleInputChange}
-                  className="form-input"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                   placeholder="Optional group name"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Start and End Time */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="form-label">Start Time</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Start Date & Time</label>
                 <input
                   type="time"
                   name="startTime"
                   value={formData.startTime}
                   onChange={handleInputChange}
-                  className="form-input"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
               <div>
-                <label className="form-label">End Time</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">End Date & Time</label>
                 <input
                   type="time"
                   name="endTime"
                   value={formData.endTime}
                   onChange={handleInputChange}
-                  className="form-input"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
             </div>
 
+            {/* Description */}
             <div>
-              <label className="form-label">Description</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="form-input"
-                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                rows={4}
                 placeholder="Optional description"
               />
             </div>
 
+            {/* Repeat Options */}
             <div>
-              <label className="form-label">Repeat</label>
+              <label className="block text-sm font-bold text-gray-700 mb-3">Repeat Option</label>
               <select
                 value={formData.repeat.type}
                 onChange={(e) => handleRepeatChange('type', e.target.value)}
-                className="form-input"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 mb-4"
               >
                 <option value="none">No repeat</option>
                 <option value="daily">Daily</option>
@@ -219,37 +254,85 @@ const EventDialog = ({ isOpen, onClose, selectedDate, event = null }) => {
                 <option value="monthly">Monthly</option>
                 <option value="yearly">Yearly</option>
               </select>
+
+              {/* Weekly repeat options */}
+              {formData.repeat.type === 'weekly' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Select Days</label>
+                  <div className="grid grid-cols-7 gap-2">
+                    {weekdays.map((day) => (
+                      <button
+                        key={day.id}
+                        type="button"
+                        onClick={() => handleWeekdayToggle(day.id)}
+                        className={`p-3 rounded-xl text-sm font-bold transition-all duration-200 ${
+                          formData.repeat.weekdays.includes(day.id)
+                            ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg transform scale-105'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700'
+                        }`}
+                        title={day.name}
+                      >
+                        <div className="flex flex-col items-center space-y-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                          </svg>
+                          <span>{day.label}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex justify-between pt-4">
-              <div className="flex space-x-2">
+            {/* Action Buttons */}
+            <div className="flex justify-between pt-6 border-t border-gray-200">
+              <div className="flex space-x-3">
                 {event && (
                   <button
                     type="button"
                     onClick={handleDelete}
                     disabled={loading}
-                    className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                    className="flex items-center space-x-2 px-6 py-3 text-sm font-bold text-red-600 border-2 border-red-300 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 transition-all duration-200"
                   >
-                    Delete
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Delete</span>
                   </button>
                 )}
               </div>
               
-              <div className="flex space-x-2">
+              <div className="flex space-x-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="btn-secondary"
+                  className="px-6 py-3 text-sm font-bold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 transition-all duration-200"
                   disabled={loading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary"
+                  className="flex items-center space-x-2 px-8 py-3 text-sm font-bold bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                   disabled={loading}
                 >
-                  {loading ? 'Saving...' : event ? 'Update' : 'Create'}
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>{event ? 'Update Event' : 'Create Event'}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

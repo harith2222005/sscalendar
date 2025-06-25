@@ -1,0 +1,489 @@
+# SSCalendar - Superuser Creation Guide
+
+## Overview
+Since SSCalendar uses Google OAuth for authentication, creating a superuser (admin) requires a different approach than traditional username/password systems. This guide provides multiple methods to create admin users.
+
+## Method 1: Database Direct Update (Recommended)
+
+### 1.1 Using MongoDB Compass
+1. Open MongoDB Compass
+2. Connect to your database:
+   ```
+   mongodb+srv://harithcb22:H4rithP3rum4l@cluster0.ga2tc.mongodb.net/GuardShare
+   ```
+3. Navigate to `GuardShare` database → `users` collection
+4. Find the user you want to make admin
+5. Edit the document and change `role` field from `"user"` to `"admin"`
+6. Save the changes
+
+### 1.2 Using MongoDB Shell
+```javascript
+// Connect to MongoDB
+mongosh "mongodb+srv://harithcb22:H4rithP3rum4l@cluster0.ga2tc.mongodb.net/GuardShare"
+
+// Find user by email and update role
+db.users.updateOne(
+  { email: "admin@example.com" },
+  { $set: { role: "admin" } }
+)
+
+// Verify the update
+db.users.findOne({ email: "admin@example.com" })
+```
+
+### 1.3 Using Node.js Script
+Create `scripts/create-admin.js`:
+```javascript
+import mongoose from 'mongoose'
+import User from '../server/models/User.js'
+import dotenv from 'dotenv'
+
+dotenv.config({ path: '../server/.env' })
+
+const createAdmin = async () => {
+  try {
+    // Connect to MongoDB
+    await mongoose.connect(process.env.MONGODB_URI)
+    console.log('Connected to MongoDB')
+
+    // Email of user to make admin
+    const adminEmail = process.argv[2]
+    
+    if (!adminEmail) {
+      console.error('Please provide an email address')
+      console.log('Usage: node create-admin.js admin@example.com')
+      process.exit(1)
+    }
+
+    // Update user role
+    const result = await User.updateOne(
+      { email: adminEmail },
+      { $set: { role: 'admin' } }
+    )
+
+    if (result.matchedCount === 0) {
+      console.error(`User with email ${adminEmail} not found`)
+      console.log('Make sure the user has logged in at least once')
+    } else {
+      console.log(`Successfully made ${adminEmail} an admin`)
+      
+      // Display updated user
+      const user = await User.findOne({ email: adminEmail })
+      console.log('Updated user:', {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt
+      })
+    }
+
+  } catch (error) {
+    console.error('Error:', error)
+  } finally {
+    await mongoose.disconnect()
+    process.exit(0)
+  }
+}
+
+createAdmin()
+```
+
+Run the script:
+```bash
+cd scripts
+node create-admin.js admin@example.com
+```
+
+## Method 2: API Endpoint (Development Only)
+
+### 2.1 Create Admin Endpoint
+Add to `server/routes/auth.js`:
+```javascript
+// DEVELOPMENT ONLY - Remove in production
+router.post('/create-admin', async (req, res) => {
+  // Only allow in development
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ message: 'Not allowed in production' })
+  }
+
+  try {
+    const { email } = req.body
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' })
+    }
+
+    // Update user role
+    const user = await User.findOneAndUpdate(
+      { email },
+      { $set: { role: 'admin' } },
+      { new: true }
+    )
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    // Log the action
+    await Log.create({
+      userId: user._id,
+      action: 'admin_action',
+      description: `User ${user.name} was made admin via API`,
+      metadata: { email: user.email, method: 'api' }
+    })
+
+    res.json({
+      message: 'User successfully made admin',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    })
+  } catch (error) {
+    console.error('Create admin error:', error)
+    res.status(500).json({ message: 'Failed to create admin' })
+  }
+})
+```
+
+### 2.2 Use the Endpoint
+```bash
+# Using curl
+curl -X POST http://localhost:3000/api/auth/create-admin \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@example.com"}'
+
+# Using Postman
+POST http://localhost:3000/api/auth/create-admin
+Content-Type: application/json
+{
+  "email": "admin@example.com"
+}
+```
+
+## Method 3: Environment Variable Admin
+
+### 3.1 Auto-Admin on First Login
+Modify `server/routes/auth.js` Google login route:
+```javascript
+// In the Google Sign-In route, after user creation/update
+router.post('/google', async (req, res) => {
+  try {
+    // ... existing Google OAuth code ...
+
+    // Check if this should be an admin user
+    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || []
+    
+    if (adminEmails.includes(email) && user.role !== 'admin') {
+      user.role = 'admin'
+      await user.save()
+      
+      // Log the auto-admin action
+      await Log.create({
+        userId: user._id,
+        action: 'admin_action',
+        description: `User ${user.name} auto-promoted to admin`,
+        metadata: { email: user.email, method: 'env_config' }
+      })
+    }
+
+    // ... rest of the login code ...
+  } catch (error) {
+    // ... error handling ...
+  }
+})
+```
+
+### 3.2 Environment Configuration
+Add to your `.env` file:
+```bash
+# Comma-separated list of admin emails
+ADMIN_EMAILS=admin@example.com,superuser@company.com,owner@domain.com
+```
+
+## Method 4: First User Auto-Admin
+
+### 4.1 Auto-Admin First User
+Modify user creation in `server/routes/auth.js`:
+```javascript
+// In the Google Sign-In route
+if (!user) {
+  // Check if this is the first user
+  const userCount = await User.countDocuments()
+  
+  user = new User({
+    googleId,
+    name,
+    email,
+    picture,
+    role: userCount === 0 ? 'admin' : 'user' // First user becomes admin
+  })
+  await user.save()
+
+  if (userCount === 0) {
+    // Log the first user admin creation
+    await Log.create({
+      userId: user._id,
+      action: 'admin_action',
+      description: `First user ${user.name} auto-promoted to admin`,
+      metadata: { email: user.email, method: 'first_user' }
+    })
+  }
+}
+```
+
+## Method 5: Admin Panel Interface
+
+### 5.1 Create Admin Promotion Component
+Create `client/src/components/AdminPromotion.jsx`:
+```javascript
+import React, { useState } from 'react'
+import axios from 'axios'
+
+const AdminPromotion = () => {
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const promoteUser = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setMessage('')
+
+    try {
+      const response = await axios.post('/api/admin/promote', { email })
+      setMessage(`Successfully promoted ${email} to admin`)
+      setEmail('')
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Failed to promote user')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <h3 className="text-lg font-semibold mb-4">Promote User to Admin</h3>
+      
+      <form onSubmit={promoteUser} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            User Email
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            placeholder="user@example.com"
+            required
+          />
+        </div>
+        
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:opacity-50"
+        >
+          {loading ? 'Promoting...' : 'Promote to Admin'}
+        </button>
+      </form>
+      
+      {message && (
+        <div className={`mt-4 p-3 rounded-md ${
+          message.includes('Successfully') 
+            ? 'bg-green-50 text-green-700' 
+            : 'bg-red-50 text-red-700'
+        }`}>
+          {message}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default AdminPromotion
+```
+
+### 5.2 Add Backend Route
+Add to `server/routes/users.js`:
+```javascript
+// Promote user to admin (super admin only)
+router.post('/promote', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { email } = req.body
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' })
+    }
+
+    const user = await User.findOneAndUpdate(
+      { email },
+      { $set: { role: 'admin' } },
+      { new: true }
+    )
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    // Log the action
+    await Log.create({
+      userId: req.user._id,
+      action: 'admin_action',
+      description: `Admin ${req.user.name} promoted ${user.name} to admin`,
+      metadata: { 
+        targetUserId: user._id,
+        targetUserEmail: user.email,
+        promotedBy: req.user.email
+      }
+    })
+
+    res.json({
+      message: 'User successfully promoted to admin',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    })
+  } catch (error) {
+    console.error('Promote user error:', error)
+    res.status(500).json({ message: 'Failed to promote user' })
+  }
+})
+```
+
+## Security Considerations
+
+### 1. Production Safety
+- Remove development endpoints in production
+- Use environment variables for admin emails
+- Implement proper logging for admin actions
+- Regular audit of admin users
+
+### 2. Access Control
+```javascript
+// Middleware to check super admin
+export const requireSuperAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin' || !req.user.isSuperAdmin) {
+    return res.status(403).json({ message: 'Super admin access required' })
+  }
+  next()
+}
+```
+
+### 3. Admin Levels
+Consider implementing multiple admin levels:
+```javascript
+// User schema with admin levels
+const userSchema = new mongoose.Schema({
+  // ... existing fields ...
+  role: {
+    type: String,
+    enum: ['user', 'moderator', 'admin', 'super_admin'],
+    default: 'user'
+  },
+  permissions: [{
+    type: String,
+    enum: ['read_users', 'write_users', 'delete_users', 'read_logs', 'system_admin']
+  }]
+})
+```
+
+## Verification Steps
+
+### 1. Verify Admin Status
+```javascript
+// Check if user is admin
+const checkAdminStatus = async (email) => {
+  const user = await User.findOne({ email })
+  console.log(`User: ${user.name}`)
+  console.log(`Email: ${user.email}`)
+  console.log(`Role: ${user.role}`)
+  console.log(`Is Admin: ${user.role === 'admin'}`)
+}
+```
+
+### 2. Test Admin Features
+1. Login with admin account
+2. Navigate to Users section (should be visible)
+3. Navigate to Logs section (should be visible)
+4. Try admin-only actions
+5. Verify proper permissions
+
+### 3. Audit Admin Actions
+```javascript
+// Get all admin actions
+const adminActions = await Log.find({ 
+  action: 'admin_action' 
+}).populate('userId', 'name email')
+
+console.log('Admin Actions:', adminActions)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. User Not Found
+- Ensure user has logged in at least once
+- Check email spelling
+- Verify database connection
+
+#### 2. Role Not Updating
+- Check database write permissions
+- Verify MongoDB connection
+- Clear browser cache and re-login
+
+#### 3. Admin Features Not Showing
+- Hard refresh browser (Ctrl+F5)
+- Check browser console for errors
+- Verify JWT token contains updated role
+
+#### 4. Permission Denied
+- Ensure user role is exactly "admin"
+- Check middleware implementation
+- Verify token is valid
+
+### Debug Commands
+
+```javascript
+// Check all users and their roles
+db.users.find({}, { name: 1, email: 1, role: 1 })
+
+// Count admin users
+db.users.countDocuments({ role: "admin" })
+
+// Find specific user
+db.users.findOne({ email: "admin@example.com" })
+
+// Update user role manually
+db.users.updateOne(
+  { email: "admin@example.com" },
+  { $set: { role: "admin" } }
+)
+```
+
+## Best Practices
+
+1. **Minimal Admin Users**: Only create necessary admin accounts
+2. **Regular Audits**: Review admin users quarterly
+3. **Logging**: Log all admin actions for security
+4. **Backup**: Backup database before making changes
+5. **Testing**: Test admin features in development first
+6. **Documentation**: Keep record of admin users and reasons
+
+## Emergency Admin Recovery
+
+If you lose admin access:
+
+1. **Database Access**: Use MongoDB Compass or shell
+2. **Server Access**: SSH to server and run Node.js script
+3. **Environment Reset**: Use ADMIN_EMAILS environment variable
+4. **Fresh Install**: Reset database and use first-user method
+
+Remember to always test admin creation in development before applying to production!

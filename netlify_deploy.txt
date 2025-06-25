@@ -1,0 +1,421 @@
+# SSCalendar - Netlify Frontend Deployment Guide
+
+## Prerequisites
+- Netlify account (https://netlify.com)
+- GitHub repository with SSCalendar frontend code
+- Backend deployed separately (Render, Heroku, etc.)
+- Google Cloud Console OAuth configured
+
+## Step 1: Prepare Frontend for Deployment
+
+### 1.1 Build Configuration
+Ensure your `client/package.json` has correct build script:
+```json
+{
+  "scripts": {
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}
+```
+
+### 1.2 Environment Variables
+Create `client/.env.production`:
+```bash
+VITE_GOOGLE_CLIENT_ID=70995210409-osvu98nv8igogfk4n8t2rro16tcdnd0i.apps.googleusercontent.com
+VITE_API_BASE_URL=https://your-backend-url.onrender.com
+```
+
+### 1.3 Vite Configuration
+Update `client/vite.config.js` for production:
+```javascript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  css: {
+    postcss: './postcss.config.js',
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'terser',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['@react-oauth/google', 'dayjs']
+        }
+      }
+    }
+  },
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_BASE_URL || 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
+})
+```
+
+## Step 2: Create Netlify Redirects
+
+### 2.1 Create Redirects File
+Create `client/public/_redirects`:
+```
+# SPA Fallback
+/*    /index.html   200
+
+# API Proxy (if needed)
+/api/*  https://your-backend-url.onrender.com/api/:splat  200
+
+# Security Headers
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+```
+
+### 2.2 Create Headers File (Optional)
+Create `client/public/_headers`:
+```
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://your-backend-url.onrender.com;
+```
+
+## Step 3: Deploy via Git Integration
+
+### 3.1 Connect Repository
+1. Go to Netlify Dashboard
+2. Click "New site from Git"
+3. Choose GitHub (or your Git provider)
+4. Select your SSCalendar repository
+5. Configure build settings:
+   - **Branch**: `main`
+   - **Base directory**: `client`
+   - **Build command**: `npm run build`
+   - **Publish directory**: `client/dist`
+
+### 3.2 Environment Variables
+In Netlify site settings → Environment variables:
+```bash
+VITE_GOOGLE_CLIENT_ID=70995210409-osvu98nv8igogfk4n8t2rro16tcdnd0i.apps.googleusercontent.com
+VITE_API_BASE_URL=https://your-backend-url.onrender.com
+NODE_VERSION=18
+```
+
+### 3.3 Deploy Site
+1. Click "Deploy site"
+2. Wait for build to complete
+3. Note your Netlify URL: `https://amazing-app-name.netlify.app`
+
+## Step 4: Manual Deployment (Alternative)
+
+### 4.1 Build Locally
+```bash
+cd client
+npm install
+npm run build
+```
+
+### 4.2 Deploy via Drag & Drop
+1. Go to Netlify Dashboard
+2. Drag the `client/dist` folder to the deploy area
+3. Wait for deployment to complete
+
+### 4.3 Deploy via Netlify CLI
+```bash
+# Install Netlify CLI
+npm install -g netlify-cli
+
+# Login to Netlify
+netlify login
+
+# Deploy from client directory
+cd client
+npm run build
+netlify deploy --prod --dir=dist
+```
+
+## Step 5: Custom Domain Setup
+
+### 5.1 Add Custom Domain
+1. In Netlify site settings → Domain management
+2. Click "Add custom domain"
+3. Enter your domain: `yourdomain.com`
+4. Verify domain ownership
+
+### 5.2 DNS Configuration
+Update your domain's DNS records:
+
+**Option A: Netlify DNS (Recommended)**
+1. Change nameservers to Netlify's
+2. Netlify manages all DNS records
+
+**Option B: External DNS**
+Add CNAME record:
+```
+Type: CNAME
+Name: www (or @)
+Value: amazing-app-name.netlify.app
+```
+
+### 5.3 SSL Certificate
+1. Netlify automatically provisions SSL
+2. Force HTTPS in site settings
+3. Verify certificate is active
+
+## Step 6: Update Google OAuth Settings
+
+### 6.1 Add Netlify Domain
+In Google Cloud Console → OAuth 2.0 settings:
+
+**Authorized JavaScript Origins:**
+```
+https://amazing-app-name.netlify.app
+https://yourdomain.com (if using custom domain)
+```
+
+**Authorized Redirect URIs:**
+```
+https://amazing-app-name.netlify.app
+https://amazing-app-name.netlify.app/auth/callback
+https://yourdomain.com (if using custom domain)
+https://yourdomain.com/auth/callback (if using custom domain)
+```
+
+## Step 7: Configure Backend CORS
+
+### 7.1 Update Backend Environment
+Update your backend's `CLIENT_URL`:
+```bash
+CLIENT_URL=https://amazing-app-name.netlify.app
+```
+
+### 7.2 Multiple Origins (if needed)
+If supporting multiple domains:
+```javascript
+// In your backend CORS configuration
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://amazing-app-name.netlify.app',
+    'https://yourdomain.com'
+  ],
+  credentials: true
+}))
+```
+
+## Step 8: Optimization and Performance
+
+### 8.1 Build Optimization
+Create `client/netlify.toml`:
+```toml
+[build]
+  base = "client"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+```
+
+### 8.2 Performance Features
+Enable in Netlify:
+- Asset optimization
+- Bundle analyzer
+- Prerendering (if applicable)
+- Form handling
+- Function deployment
+
+## Step 9: Testing and Validation
+
+### 9.1 Functionality Tests
+- [ ] Site loads correctly
+- [ ] Google Sign-In works
+- [ ] API calls to backend succeed
+- [ ] All routes work (SPA routing)
+- [ ] Mobile responsiveness
+- [ ] Performance metrics
+
+### 9.2 Security Tests
+- [ ] HTTPS enforced
+- [ ] Security headers present
+- [ ] No mixed content warnings
+- [ ] OAuth flow secure
+- [ ] No exposed secrets
+
+### 9.3 Performance Tests
+- [ ] Lighthouse score > 90
+- [ ] Fast loading times
+- [ ] Optimized images
+- [ ] Minimal bundle size
+- [ ] Proper caching
+
+## Step 10: Monitoring and Analytics
+
+### 10.1 Netlify Analytics
+Enable in site settings:
+- Page views
+- Unique visitors
+- Top pages
+- Referrers
+
+### 10.2 Error Monitoring
+Set up error tracking:
+- Netlify Functions logs
+- Browser console errors
+- Failed deployments
+- 404 errors
+
+### 10.3 Performance Monitoring
+- Core Web Vitals
+- Bundle size tracking
+- Build time optimization
+- CDN performance
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. Build Failures
+```bash
+# Check build logs in Netlify
+# Common fixes:
+- Verify Node.js version
+- Check package.json scripts
+- Ensure all dependencies installed
+- Fix TypeScript/ESLint errors
+```
+
+#### 2. Routing Issues
+```bash
+# Ensure _redirects file exists
+# Check SPA fallback rule
+# Verify React Router configuration
+```
+
+#### 3. Environment Variables
+```bash
+# Variables must start with VITE_
+# Check spelling and values
+# Verify in Netlify dashboard
+```
+
+#### 4. API Connection Issues
+```bash
+# Verify backend URL
+# Check CORS configuration
+# Test API endpoints directly
+# Verify SSL certificates
+```
+
+### Deployment Best Practices
+
+#### 1. Branch Previews
+- Enable deploy previews for pull requests
+- Test changes before merging
+- Use different environment variables for staging
+
+#### 2. Rollback Strategy
+- Keep previous deployments
+- Quick rollback capability
+- Monitor deployment health
+
+#### 3. Security
+- Regular dependency updates
+- Security header configuration
+- Environment variable protection
+- Access control
+
+## Advanced Features
+
+### 1. Split Testing
+```toml
+# In netlify.toml
+[[redirects]]
+  from = "/home"
+  to = "/home-variant-a"
+  status = 200
+  conditions = {Cookie = ["split-test=a"]}
+
+[[redirects]]
+  from = "/home"
+  to = "/home-variant-b"
+  status = 200
+  conditions = {Cookie = ["split-test=b"]}
+```
+
+### 2. Edge Functions
+```javascript
+// netlify/edge-functions/auth.js
+export default async (request, context) => {
+  // Custom authentication logic
+  return context.next()
+}
+```
+
+### 3. Form Handling
+```html
+<!-- Contact form with Netlify handling -->
+<form name="contact" method="POST" data-netlify="true">
+  <input type="hidden" name="form-name" value="contact" />
+  <!-- form fields -->
+</form>
+```
+
+## Maintenance Checklist
+
+### Weekly
+- [ ] Check deployment status
+- [ ] Review error logs
+- [ ] Monitor performance metrics
+- [ ] Update dependencies
+
+### Monthly
+- [ ] Security audit
+- [ ] Performance optimization
+- [ ] Backup verification
+- [ ] Cost analysis
+
+### Quarterly
+- [ ] Major dependency updates
+- [ ] Security review
+- [ ] Performance benchmarking
+- [ ] Feature planning
+
+## Support Resources
+
+- Netlify Documentation: https://docs.netlify.com
+- Vite Documentation: https://vitejs.dev
+- React Documentation: https://reactjs.org
+- Netlify Community: https://community.netlify.com
+- Status Page: https://netlifystatus.com

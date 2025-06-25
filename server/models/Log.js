@@ -15,6 +15,7 @@ const logSchema = new mongoose.Schema({
       'event_deleted',
       'json_upload',
       'user_login',
+      'user_logout',
       'admin_action'
     ]
   },
