@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #f4f9fe 0%, #fff1e6 100%);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-ocean-gradient text-white px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:brightness-110 hover:shadow-md focus:ring-2 focus:ring-purple-400 focus:outline-none;
+  }
+  
+  .btn-secondary {
+    @apply border-2 border-sunset-orange-start text-sunset-orange-start px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:bg-orange-gradient hover:text-white focus:ring-2 focus:ring-orange-400 focus:outline-none;
+  }
+  
+  .btn-tertiary {
+    @apply text-sunset-orange-start font-medium transition-all duration-200 hover:text-sunset-orange-end focus:outline-none;
+  }
+  
+  .card {
+    @apply bg-white rounded-md shadow-sm border border-gray-100 p-4;
+  }
+  
+  .dialog {
+    @apply bg-white rounded-2xl shadow-xl border border-gray-200;
+  }
+  
+  .sidebar-item {
+    @apply flex items-center px-4 py-3 text-gray-700 hover:bg-ocean-soft hover:text-ocean-blue-start transition-all duration-200 cursor-pointer rounded-lg mx-2;
+  }
+  
+  .sidebar-item.active {
+    @apply bg-ocean-gradient text-white shadow-md;
+  }
+  
+  .event-chip {
+    @apply px-2 py-1 rounded text-xs font-medium truncate cursor-pointer transition-all duration-200 hover:shadow-sm;
+  }
+  
+  .calendar-cell {
+    @apply border border-gray-200 min-h-[120px] p-1 bg-white hover:bg-gray-50 transition-colors duration-200;
+  }
+
+  /* Custom gradient ring for today highlight */
+  .ring-purple-gradient {
+    box-shadow: 0 0 0 2px #7b4397, 0 0 0 4px #dc2430;
+  }
+  
+  .calendar-cell.today {
+    @apply ring-2 ring-purple-gradient;
+  }
+  
+  .form-input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-blue-start focus:border-transparent transition-all duration-200;
+  }
+  
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-ocean-blue-start to-royal-purple-end bg-clip-text text-transparent;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

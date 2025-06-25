@@ -1,0 +1,128 @@
+# SSCalendar - File Structure Explanation
+
+## Root Directory
+- package.json: Root package file for running both client and server concurrently
+- README.md: Project overview, setup instructions, and documentation
+- .gitignore: Git ignore patterns for node_modules, env files, build artifacts
+
+## Client Directory (/client)
+Frontend React application built with Vite
+
+### Configuration Files
+- package.json: Frontend dependencies and scripts
+- vite.config.js: Vite build configuration with proxy setup for API calls
+- tailwind.config.js: Tailwind CSS configuration with custom colors and gradients
+- postcss.config.js: PostCSS configuration for Tailwind processing
+- .env.example: Template for environment variables (Google Client ID, API URL)
+
+### Public Assets
+- index.html: Main HTML template with Google Sign-In script and Poppins font
+- calendar-icon.svg: Application favicon (referenced but not shown)
+
+### Source Code (/client/src)
+- main.jsx: React application entry point
+- App.jsx: Root component with routing and context providers
+- index.css: Global styles with Tailwind directives and custom CSS classes
+
+### Contexts (/client/src/contexts)
+- AuthContext.jsx: Authentication state management (login, logout, user data)
+- CalendarContext.jsx: Calendar and events state management (CRUD operations)
+
+### Components (/client/src/components)
+- ProtectedRoute.jsx: Route guard for authenticated users
+- LoadingSpinner.jsx: Reusable loading indicator component
+- Sidebar.jsx: Navigation sidebar with responsive mobile/desktop versions
+
+#### Calendar Components
+- Home.jsx: Main calendar view with month navigation
+- CalendarGrid.jsx: 7x6 calendar grid displaying events
+- EventDialog.jsx: Modal for creating/editing events
+- Events.jsx: Event list view with JSON upload functionality
+
+#### Feature Components
+- Search.jsx: Event search with filters (date, group, text)
+- Notifications.jsx: Upcoming events and repeat notifications
+- Profile.jsx: User profile with activity statistics
+
+#### Admin Components (Admin Only)
+- Users.jsx: User management interface for admins
+- Logs.jsx: Activity logs viewer for admins
+
+### Pages (/client/src/pages)
+- LoginPage.jsx: Google OAuth login interface
+- Dashboard.jsx: Main dashboard layout with nested routing
+
+## Server Directory (/server)
+Backend Express.js API server
+
+### Configuration Files
+- package.json: Backend dependencies and scripts
+- index.js: Main server file with middleware setup and route mounting
+- .env.example: Template for environment variables (MongoDB, Google OAuth, JWT)
+
+### Database Models (/server/models)
+- User.js: User schema (Google OAuth data, role, status)
+- Event.js: Event schema (calendar events with repeat logic)
+- Log.js: Activity log schema (user actions tracking)
+
+### Middleware (/server/middleware)
+- auth.js: JWT authentication and admin authorization middleware
+
+### API Routes (/server/routes)
+- auth.js: Authentication endpoints (Google OAuth, user profile)
+- events.js: Event CRUD operations and JSON upload
+- users.js: User management endpoints (admin only)
+- logs.js: Activity logs endpoints (admin only)
+- search.js: Event search functionality
+
+## Documentation Files
+- tools_versions.txt: Complete list of all dependencies and versions
+- api_endpoints.txt: Detailed API documentation with sample requests/responses
+- data_flow.txt: System data flow and process documentation
+- file_explanations.txt: This file - explains purpose of each file/folder
+- run_commands.txt: Setup and execution commands
+- google.txt: Google Cloud Console configuration requirements
+
+## Key Architecture Decisions
+
+### Frontend Architecture
+- React with functional components and hooks
+- Context API for state management (no Redux needed)
+- React Router for client-side routing
+- Tailwind CSS for styling with custom design system
+- Vite for fast development and building
+
+### Backend Architecture
+- Express.js RESTful API
+- MongoDB with Mongoose ODM
+- JWT for stateless authentication
+- Google OAuth 2.0 for user authentication
+- Middleware-based security (helmet, rate limiting, CORS)
+
+### Database Design
+- User-centric data model (events belong to users)
+- Flexible event schema supporting repeat patterns
+- Activity logging for admin oversight
+- Indexed queries for performance
+
+### Security Implementation
+- JWT tokens for API authentication
+- Google OAuth for secure user authentication
+- Role-based access control (user/admin)
+- Request rate limiting
+- CORS protection
+- Input validation and sanitization
+
+### Development Workflow
+- Concurrent development (client and server)
+- Environment-based configuration
+- Modular component architecture
+- Separation of concerns (contexts, components, pages)
+- RESTful API design patterns
+
+### Deployment Strategy
+- Frontend: Static site deployment (Netlify)
+- Backend: Node.js hosting (Railway, Heroku, etc.)
+- Database: MongoDB Atlas cloud hosting
+- Environment variables for configuration
+- Build optimization for production

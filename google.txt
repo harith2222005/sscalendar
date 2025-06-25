@@ -1,0 +1,168 @@
+# Google Cloud Console Configuration for SSCalendar
+
+## Required Settings for Google OAuth 2.0
+
+### JavaScript Origins (Authorized JavaScript origins)
+Add these URLs to your Google Cloud Console OAuth 2.0 client:
+
+**Development:**
+- http://localhost:5173
+
+**Production (after deployment):**
+- https://your-netlify-domain.netlify.app
+- https://your-custom-domain.com (if using custom domain)
+
+### Redirect URIs (Authorized redirect URIs)
+Add these URLs to your Google Cloud Console OAuth 2.0 client:
+
+**Development:**
+- http://localhost:5173
+- http://localhost:5173/auth/callback
+
+**Production (after deployment):**
+- https://your-netlify-domain.netlify.app
+- https://your-netlify-domain.netlify.app/auth/callback
+- https://your-custom-domain.com (if using custom domain)
+- https://your-custom-domain.com/auth/callback (if using custom domain)
+
+## Current OAuth 2.0 Client Configuration
+
+**Client ID:** 70995210409-osvu98nv8igogfk4n8t2rro16tcdnd0i.apps.googleusercontent.com
+**Project ID:** sscalendar-464003
+**Client Secret:** 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
+
+## Step-by-Step Google Cloud Console Setup
+
+### 1. Access Google Cloud Console
+- Go to https://console.cloud.google.com/
+- Select project: sscalendar-464003
+
+### 2. Navigate to OAuth 2.0 Settings
+- Go to "APIs & Services" > "Credentials"
+- Find your OAuth 2.0 client ID
+- Click the edit button (pencil icon)
+
+### 3. Configure Authorized JavaScript Origins
+In the "Authorized JavaScript origins" section, add:
+```
+http://localhost:5173
+https://your-deployed-frontend-url.netlify.app
+```
+
+### 4. Configure Authorized Redirect URIs
+In the "Authorized redirect URIs" section, add:
+```
+http://localhost:5173
+http://localhost:5173/auth/callback
+https://your-deployed-frontend-url.netlify.app
+https://your-deployed-frontend-url.netlify.app/auth/callback
+```
+
+### 5. Save Configuration
+- Click "Save" to apply changes
+- Changes may take a few minutes to propagate
+
+## OAuth Consent Screen Configuration
+
+### Required Information:
+- **Application name:** SSCalendar
+- **User support email:** Your email address
+- **Application home page:** Your deployed frontend URL
+- **Application privacy policy link:** (Optional but recommended)
+- **Application terms of service link:** (Optional but recommended)
+- **Authorized domains:** 
+  - localhost (for development)
+  - netlify.app (if using Netlify)
+  - your-custom-domain.com (if applicable)
+
+### Scopes Required:
+- email
+- profile
+- openid
+
+## Testing OAuth Configuration
+
+### Development Testing:
+1. Start your development server: `npm run dev`
+2. Navigate to http://localhost:5173
+3. Click "Sign in with Google"
+4. Should open Google OAuth popup
+5. After authentication, should redirect back to your app
+
+### Production Testing:
+1. Deploy your frontend to Netlify
+2. Update Google Console with production URLs
+3. Test sign-in flow on deployed site
+
+## Common Issues and Solutions
+
+### "redirect_uri_mismatch" Error
+- Ensure the redirect URI in Google Console exactly matches your app's URL
+- Check for trailing slashes, http vs https, www vs non-www
+- Verify the domain is correctly spelled
+
+### "origin_mismatch" Error
+- Ensure JavaScript origins in Google Console match your app's domain
+- Check protocol (http vs https)
+- Verify port numbers for development
+
+### OAuth Popup Blocked
+- Ensure popup blockers are disabled for your domain
+- Test in incognito/private browsing mode
+- Check browser console for errors
+
+## Security Best Practices
+
+### Client ID Security:
+- Client ID can be public (used in frontend)
+- Include in environment variables for easy management
+- No need to hide client ID in production builds
+
+### Client Secret Security:
+- NEVER expose client secret in frontend code
+- Only use in backend server environment
+- Store in secure environment variables
+- Rotate periodically for security
+
+### Domain Restrictions:
+- Only add necessary domains to authorized origins
+- Remove development URLs from production configuration
+- Use specific paths rather than wildcard domains
+
+## Environment Variables Setup
+
+### Frontend (.env):
+```
+VITE_GOOGLE_CLIENT_ID=70995210409-osvu98nv8igogfk4n8t2rro16tcdnd0i.apps.googleusercontent.com
+```
+
+### Backend (.env):
+```
+GOOGLE_CLIENT_ID=70995210409-osvu98nv8igogfk4n8t2rro16tcdnd0i.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+```
+
+## Deployment Checklist
+
+Before deploying to production:
+- [ ] Update Google Console with production URLs
+- [ ] Test OAuth flow in development
+- [ ] Configure environment variables for production
+- [ ] Update CORS settings in backend for production domain
+- [ ] Test complete authentication flow after deployment
+- [ ] Verify user data is properly stored in MongoDB
+- [ ] Test token refresh and session management
+
+## Monitoring and Maintenance
+
+### Regular Tasks:
+- Monitor OAuth usage in Google Console
+- Check for failed authentication attempts
+- Update authorized domains when deploying to new environments
+- Review and rotate client secrets periodically
+- Monitor quota usage and limits
+
+### Troubleshooting Resources:
+- Google OAuth 2.0 Playground: https://developers.google.com/oauthplayground/
+- Google Identity Documentation: https://developers.google.com/identity
+- OAuth 2.0 Debugger: https://oauthdebugger.com/

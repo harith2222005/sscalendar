@@ -1,0 +1,284 @@
+# SSCalendar - Setup and Run Commands
+
+## Prerequisites Installation
+```bash
+# Install Node.js (version 20.18.0 recommended)
+# Download from: https://nodejs.org/
+
+# Verify installation
+node --version
+npm --version
+
+# Install Git
+# Download from: https://git-scm.com/
+git --version
+```
+
+## Project Setup
+
+### 1. Clone/Download Project
+```bash
+# If using Git
+git clone <repository-url>
+cd sscalendar
+
+# Or extract downloaded ZIP file
+cd sscalendar
+```
+
+### 2. Install Dependencies
+```bash
+# Install root dependencies (concurrently)
+npm install
+
+# Install client dependencies
+cd client
+npm install
+cd ..
+
+# Install server dependencies
+cd server
+npm install
+cd ..
+```
+
+### 3. Environment Configuration
+
+#### Client Environment (.env in /client directory)
+```bash
+cd client
+cp .env.example .env
+
+# Edit .env file with:
+VITE_GOOGLE_CLIENT_ID=70995210409-osvu98nv8igogfk4n8t2rro16tcdnd0i.apps.googleusercontent.com
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+#### Server Environment (.env in /server directory)
+```bash
+cd server
+cp .env.example .env
+
+# Edit .env file with:
+MONGODB_URI=mongodb+srv://harithcb22:H4rithP3rum4l@cluster0.ga2tc.mongodb.net/GuardShare?retryWrites=true&w=majority&appName=Cluster0
+GOOGLE_CLIENT_ID=70995210409-osvu98nv8igogfk4n8t2rro16tcdnd0i.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+JWT_SECRET=your_super_secret_jwt_key_here_make_it_long_and_random
+CLIENT_URL=http://localhost:5173
+PORT=3000
+```
+
+## Development Commands
+
+### Run Full Application (Recommended)
+```bash
+# From root directory - runs both client and server
+npm run dev
+
+# This starts:
+# - Client on http://localhost:5173
+# - Server on http://localhost:3000
+```
+
+### Run Individual Services
+
+#### Client Only
+```bash
+cd client
+npm run dev
+# Runs on http://localhost:5173
+```
+
+#### Server Only
+```bash
+cd server
+npm run dev
+# Runs on http://localhost:3000
+```
+
+## Build Commands
+
+### Build Client for Production
+```bash
+cd client
+npm run build
+# Creates /client/dist folder with optimized files
+```
+
+### Preview Production Build
+```bash
+cd client
+npm run preview
+# Serves production build locally
+```
+
+## Testing Commands
+
+### Lint Client Code
+```bash
+cd client
+npm run lint
+# Checks for code quality issues
+```
+
+### Test API Endpoints
+```bash
+# Use curl or Postman to test endpoints
+
+# Health check
+curl http://localhost:3000/api/health
+
+# Test with authentication (replace TOKEN with actual JWT)
+curl -H "Authorization: Bearer TOKEN" http://localhost:3000/api/events
+```
+
+## Database Commands
+
+### MongoDB Atlas Setup
+1. Ensure MongoDB Atlas cluster is running
+2. Whitelist your IP address in Atlas
+3. Verify connection string in server/.env
+4. Database and collections will be created automatically
+
+### Check Database Connection
+```bash
+cd server
+node -e "
+const mongoose = require('mongoose');
+mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://harithcb22:H4rithP3rum4l@cluster0.ga2tc.mongodb.net/GuardShare?retryWrites=true&w=majority&appName=Cluster0')
+.then(() => console.log('MongoDB connected successfully'))
+.catch(err => console.error('MongoDB connection error:', err));
+"
+```
+
+## Deployment Commands
+
+### Deploy to Netlify (Frontend)
+```bash
+# Build the client
+cd client
+npm run build
+
+# Deploy dist folder to Netlify
+# Option 1: Drag and drop /client/dist to netlify.com
+# Option 2: Use Netlify CLI
+npm install -g netlify-cli
+netlify deploy --prod --dir=dist
+```
+
+### Deploy Backend (Railway/Heroku)
+```bash
+# For Railway
+npm install -g @railway/cli
+railway login
+railway init
+railway up
+
+# For Heroku
+npm install -g heroku
+heroku login
+heroku create your-app-name
+git push heroku main
+```
+
+## Troubleshooting Commands
+
+### Clear Node Modules and Reinstall
+```bash
+# Client
+cd client
+rm -rf node_modules package-lock.json
+npm install
+
+# Server
+cd server
+rm -rf node_modules package-lock.json
+npm install
+
+# Root
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Check Port Usage
+```bash
+# Check if ports are in use
+lsof -i :3000  # Server port
+lsof -i :5173  # Client port
+
+# Kill processes if needed
+kill -9 <PID>
+```
+
+### View Logs
+```bash
+# Server logs (if running separately)
+cd server
+npm run dev
+
+# Client logs (if running separately)
+cd client
+npm run dev
+```
+
+## Production Environment Variables
+
+### Client (.env.production)
+```bash
+VITE_GOOGLE_CLIENT_ID=70995210409-osvu98nv8igogfk4n8t2rro16tcdnd0i.apps.googleusercontent.com
+VITE_API_BASE_URL=https://your-backend-domain.com
+```
+
+### Server (Production Environment)
+```bash
+MONGODB_URI=mongodb+srv://harithcb22:H4rithP3rum4l@cluster0.ga2tc.mongodb.net/GuardShare?retryWrites=true&w=majority&appName=Cluster0
+GOOGLE_CLIENT_ID=70995210409-osvu98nv8igogfk4n8t2rro16tcdnd0i.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+JWT_SECRET=production_jwt_secret_very_long_and_secure
+CLIENT_URL=https://your-frontend-domain.netlify.app
+PORT=3000
+NODE_ENV=production
+```
+
+## Quick Start Summary
+```bash
+# 1. Install dependencies
+npm install && cd client && npm install && cd ../server && npm install && cd ..
+
+# 2. Setup environment files (copy examples and edit)
+cp client/.env.example client/.env
+cp server/.env.example server/.env
+
+# 3. Run application
+npm run dev
+
+# 4. Open browser to http://localhost:5173
+```
+
+## Common Issues and Solutions
+
+### Port Already in Use
+```bash
+# Change ports in package.json scripts or kill existing processes
+pkill -f "node.*3000"
+pkill -f "vite.*5173"
+```
+
+### MongoDB Connection Issues
+- Check Atlas cluster status
+- Verify IP whitelist
+- Confirm connection string format
+- Check network connectivity
+
+### Google OAuth Issues
+- Verify client ID in both environments
+- Check authorized origins in Google Console
+- Ensure redirect URIs are configured
+- Confirm client secret (server only)
+
+### Build Issues
+```bash
+# Clear cache and rebuild
+rm -rf client/dist client/node_modules/.vite
+cd client && npm run build
+```

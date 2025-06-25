@@ -1,0 +1,186 @@
+# SSCalendar - API Endpoints Documentation
+
+## Base URL
+Development: http://localhost:3000/api
+Production: [Your deployed backend URL]/api
+
+## Authentication Endpoints
+
+### POST /auth/google
+Description: Authenticate user with Google OAuth token
+Headers: Content-Type: application/json
+Body:
+{
+  "token": "google_id_token_here"
+}
+
+Response:
+{
+  "token": "jwt_token",
+  "user": {
+    "id": "user_id",
+    "name": "User Name",
+    "email": "user@example.com",
+    "picture": "profile_picture_url",
+    "role": "user|admin",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "lastLogin": "2024-01-01T00:00:00.000Z"
+  }
+}
+
+### GET /auth/me
+Description: Get current authenticated user
+Headers: Authorization: Bearer jwt_token
+Response: Same as login response user object
+
+## Event Endpoints
+
+### GET /events
+Description: Get user's events with optional date filtering
+Headers: Authorization: Bearer jwt_token
+Query Parameters:
+- startDate: ISO date string (optional)
+- endDate: ISO date string (optional)
+
+Sample Request: GET /events?startDate=2024-01-01&endDate=2024-01-31
+
+Response:
+{
+  "events": [
+    {
+      "id": "event_id",
+      "title": "Meeting",
+      "description": "Team meeting",
+      "date": "2024-01-15T00:00:00.000Z",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "duration": 60,
+      "group": "Work",
+      "repeat": {
+        "type": "weekly",
+        "weekdays": [1, 3, 5],
+        "dates": []
+      },
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
+
+### POST /events
+Description: Create a new event
+Headers: Authorization: Bearer jwt_token, Content-Type: application/json
+Body:
+{
+  "title": "New Event",
+  "description": "Event description",
+  "date": "2024-01-15",
+  "startTime": "10:00",
+  "endTime": "11:00",
+  "duration": 60,
+  "group": "Personal",
+  "repeat": {
+    "type": "none",
+    "weekdays": [],
+    "dates": []
+  }
+}
+
+### PUT /events/:id
+Description: Update an existing event
+Headers: Authorization: Bearer jwt_token, Content-Type: application/json
+Body: Same as POST /events
+
+### DELETE /events/:id
+Description: Delete an event
+Headers: Authorization: Bearer jwt_token
+Response: { "message": "Event deleted successfully" }
+
+### POST /events/upload
+Description: Upload multiple events via JSON
+Headers: Authorization: Bearer jwt_token, Content-Type: application/json
+Body:
+{
+  "events": [
+    {
+      "title": "Event 1",
+      "date": "2024-01-15",
+      "startTime": "10:00"
+    },
+    {
+      "title": "Event 2",
+      "date": "2024-01-16",
+      "startTime": "14:00"
+    }
+  ]
+}
+
+## Search Endpoints
+
+### GET /search
+Description: Search events by title, description, date range, or group
+Headers: Authorization: Bearer jwt_token
+Query Parameters:
+- query: Search text (optional)
+- startDate: ISO date string (optional)
+- endDate: ISO date string (optional)
+- group: Group name filter (optional)
+
+Sample Request: GET /search?query=meeting&group=work
+
+## User Management Endpoints (Admin Only)
+
+### GET /users
+Description: Get all users (admin only)
+Headers: Authorization: Bearer jwt_token
+Response:
+{
+  "users": [
+    {
+      "id": "user_id",
+      "name": "User Name",
+      "email": "user@example.com",
+      "picture": "profile_url",
+      "role": "user",
+      "active": true,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "lastLogin": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
+
+### PATCH /users/:id
+Description: Update user status (admin only)
+Headers: Authorization: Bearer jwt_token, Content-Type: application/json
+Body: { "active": true }
+
+## Logs Endpoints (Admin Only)
+
+### GET /logs
+Description: Get activity logs (admin only)
+Headers: Authorization: Bearer jwt_token
+Query Parameters:
+- action: Filter by action type (optional)
+- userId: Filter by user ID (optional)
+- startDate: ISO date string (optional)
+- endDate: ISO date string (optional)
+- limit: Number of results (default: 50)
+
+## Health Check
+
+### GET /health
+Description: Check server status
+Response: { "status": "OK", "timestamp": "2024-01-01T00:00:00.000Z" }
+
+## Error Responses
+All endpoints may return these error responses:
+- 400: Bad Request - Invalid input data
+- 401: Unauthorized - Missing or invalid token
+- 403: Forbidden - Insufficient permissions
+- 404: Not Found - Resource not found
+- 500: Internal Server Error - Server error
+
+Error Response Format:
+{
+  "message": "Error description"
+}

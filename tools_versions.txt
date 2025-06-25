@@ -1,0 +1,61 @@
+# SSCalendar - Tools and Versions
+
+## Frontend Dependencies
+- React: 18.2.0
+- React DOM: 18.2.0
+- React Router DOM: 6.20.1
+- Vite: 5.4.8
+- Tailwind CSS: 3.4.13
+- Day.js: 1.11.13
+- Axios: 1.6.2
+- @react-oauth/google: 0.12.1
+
+## Frontend Dev Dependencies
+- @types/react: 18.2.37
+- @types/react-dom: 18.2.15
+- @vitejs/plugin-react: 4.1.1
+- Autoprefixer: 10.4.16
+- ESLint: 8.53.0
+- ESLint Plugin React: 7.33.2
+- ESLint Plugin React Hooks: 4.6.0
+- ESLint Plugin React Refresh: 0.4.4
+- PostCSS: 8.4.32
+
+## Backend Dependencies
+- Express: 4.21.0
+- Mongoose: 8.0.3
+- JSON Web Token: 9.0.2
+- BCrypt.js: 2.4.3
+- CORS: 2.8.5
+- Dotenv: 16.3.1
+- Google Auth Library: 9.4.1
+- UUID: 9.0.1
+- Helmet: 7.1.5
+- Express Rate Limit: 7.1.5
+
+## Backend Dev Dependencies
+- Nodemon: 3.0.2
+
+## Root Dependencies
+- Concurrently: 8.2.2
+
+## Runtime Versions
+- Node.js: 20.18.0 (recommended)
+- NPM: 10.x (recommended)
+- MongoDB: 7.0+ (Atlas)
+
+## Development Tools
+- Git: 2.47.0+
+- VS Code: Latest (recommended)
+- Chrome/Firefox: Latest (for testing)
+
+## Build Tools
+- Vite Build System
+- Tailwind CSS Compiler
+- PostCSS Processor
+- ESLint Code Linter
+
+## Deployment Platform
+- Netlify (Frontend)
+- MongoDB Atlas (Database)
+- Google Cloud Console (OAuth)
